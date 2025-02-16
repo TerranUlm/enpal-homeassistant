@@ -63,10 +63,31 @@ async def async_setup_entry(
     for table in tables:
         field = table.records[0].values['_field']
         measurement = table.records[0].values['_measurement']
+        unit = table.records[0].values['unit']
+        sensortype = ""
+        
+        if unit == "W":
+            sensortype = "power"
+        elif unit == "kWh":
+            sensortype = "energy"
+        elif unit == "Percent":
+            sensortype = "battery"
+        elif unit == "Wh":
+            sensortype = "power"
+        elif unit == "A":
+            sensortype = "current"
+        elif unit == "V":
+            sensortype = "voltage"
+        elif unit == "Celcius":
+            sensortype = "temperature"
+        elif unit == "Hz":
+            sensortype = "freqency"
+        else:
+            sensortype = "none"
 
         if measurement == "inverter":
             if field == "Power.DC.Total": # use this one for "Energy PV Production but it needs to ...
-                addSensor('mdi:solar-power', 'Enpal Solar Production Power', 'power', 'W') # ... be mathematically integrated using the "integrate sensor" helper integration
+                addSensor('mdi:solar-power', 'Enpal Solar Production Power', sensortype, unit) # ... be mathematically integrated using the "integrate sensor" helper integration
             elif field == "Power.House.Total": # nice to have, not needed for the energy dashboard
                 addSensor('mdi:home-lightning-bolt', 'Enpal Power House Total', 'power', 'W') # needs to be mathematically integrated using the "integrate sensor" helper integration
             elif field == "Energy.Production.Total.Day": # how much energy was produced in a day. could be usefull if the timezones wouldn't be screwed. So use Power.DC.Total as explained above
@@ -107,7 +128,7 @@ async def async_setup_entry(
                 addSensor('mdi:lightning-bolt', 'Enpal Voltage Phase C', 'voltage', 'V')
             else:
                 _LOGGER.debug(f"Not adding measurement: {measurement} field: {field}")
-			
+            
         elif measurement == "system":
             if field == "Power.External.Total": # no usage so far
                 addSensor('mdi:home-lightning-bolt', 'Enpal Power External Total', 'power', 'W')
@@ -184,7 +205,7 @@ class EnpalSensor(SensorEntity):
 
             self._attr_native_value = round(float(value), 2)
             self._attr_device_class = self.enpal_device_class
-            self._attr_native_unit_of_measurement	= self.unit
+            self._attr_native_unit_of_measurement   = self.unit
             self._attr_state_class = 'measurement'
             self._attr_extra_state_attributes['last_check'] = datetime.now()
             self._attr_extra_state_attributes['field'] = self.field

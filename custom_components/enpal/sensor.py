@@ -18,7 +18,7 @@ from influxdb_client import InfluxDBClient
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=20)
 
-VERSION= '0.2.2'
+VERSION= '0.1.0'
 
 def get_tables(ip: str, port: int, token: str):
     client = InfluxDBClient(url=f'http://{ip}:{port}', token=token, org='enpal')
@@ -118,9 +118,9 @@ async def async_setup_entry(
             elif field == "Energy.External.Total.In.Day":  # can be used for "power grid" unless you have a better source
                 addSensor('mdi:transmission-tower-import', 'Enpal Energy External In Day', 'energy', 'kWh')
             elif field == "Energy.Storage.Total.Out.Day": # duplicates Energy.Battery.Charge.Day
-                addSensor('mdi:battery-arrow-down', 'Enpal Battery Discharge Day', 'energy', 'kWh')
+                addSensor('mdi:battery-arrow-down', 'Enpal Battery Discharge Day duplicate', 'energy', 'kWh')
             elif field == "Energy.Storage.Total.In.Day": # duplicates Energy.Battery.Discharge.Day
-                addSensor('mdi:battery-arrow-up', 'Enpal Battery Charge Day', 'energy', 'kWh')
+                addSensor('mdi:battery-arrow-up', 'Enpal Battery Charge Day duplicate', 'energy', 'kWh')
             else:
                 _LOGGER.debug(f"Not adding measurement: {measurement} field: {field}")
 

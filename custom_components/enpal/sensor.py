@@ -78,8 +78,10 @@ async def async_setup_entry(
             sensortype = "voltage"
         elif unit == "Percent":
             sensortype = "battery"
+            unit = "%"
         elif unit == "Celcius":
             sensortype = "temperature"
+            unit = "°C"
         elif unit == "Hz":
             sensortype = "freqency"
         else:
@@ -153,7 +155,7 @@ async def async_setup_entry(
             elif field == "Energy.Wallbox.Connector.1.Charged.Total": # use this for "individual device energy usage" in the Energy dashboard
                 addSensor('mdi:ev-station', 'Wallbox Charging Total', sensortype, unit)
             else:
-                addSensor('mdi:ev-station', 'Enpal Wallbox ' + field, sensortype, unit) # add all other sensors generically
+                addSensor('mdi:ev-station', 'Wallbox ' + field, sensortype, unit) # add all other sensors generically
 
         else:
             _LOGGER.debug(f"Measurement type not recognized: {measurement}")

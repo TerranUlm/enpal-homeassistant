@@ -18,7 +18,7 @@ from influxdb_client import InfluxDBClient
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=20)
 
-VERSION= '0.2.2'
+VERSION= '0.1.0'
 
 def get_tables(ip: str, port: int, token: str):
     client = InfluxDBClient(url=f'http://{ip}:{port}', token=token, org='enpal')
@@ -86,25 +86,32 @@ async def async_setup_entry(
             sensortype = "freqency"
         else:
             sensortype = "none"
+            unit = ""
 
         if measurement == "inverter":
             if field == "Power.DC.Total": # use this one for "Energy PV Production but it needs to ...
-                addSensor('mdi:solar-power', 'Enpal Solar Production Power', sensortype, unit) # ... be mathematically integrated using the "integrate sensor" helper integration
+                addSensor('mdi:solar-power', 'Enpal Solar Production Power', sensortype, unit) # ... be mathematically integrated using the "integral sensor" helper integration
             elif field == "Power.House.Total": # nice to have, not needed for the energy dashboard
-                addSensor('mdi:home-lightning-bolt', 'Enpal Power House Total', sensortype, unit) # needs to be mathematically integrated using the "integrate sensor" helper integration
+                addSensor('mdi:home-lightning-bolt', 'Enpal Power House Total', sensortype, unit) # needs to be mathematically integrated using the "integral sensor" helper integration
             elif field == "Energy.Production.Total.Day": # how much energy was produced in a day. could be usefull if the timezones wouldn't be screwed. So use Power.DC.Total as explained above
                 addSensor('mdi:solar-power-variant', 'Enpal Production Day', sensortype, unit)
             else:
                 addSensor('mdi:solar-power', 'Enpal Solar ' + field, sensortype, unit) # add all other sensors generically
 
         elif measurement == "battery":
-            if field == "Power.Battery.Charge.Discharge": # no usage so far as it combines charge and discharge in one dataset but homeassistant expects two separate sensors
+            if field == "Power.Battery.Charge.Discharge": # I use this value for the "Energy Storage" values as it is the most accurate one, but it requires some extra work as it is the wrong kind of value (W)
+                #                                           and it needs to be split in two seperate values as well:
+                #                                           1) create two helpers of type "filter" to cut this value into two values: one for more then 0 and one with less then 0
+                #                                              currently there is not much sunshine so I only get the daily battery charged of grid date but no discharge data
+                #                                              so I don't know if the discharge data needs to be inverted or not before the next step
+                #                                           2) now create another two helpers, this time of type "integral sensor" to get the correct kind of value (kWh) from the former filtered valus
+                #                                           3) add the new values of the former step and add them to your energy dashboard
                 addSensor('mdi:battery-charging', 'Enpal Battery Power', sensortype, unit)
             elif field == "Energy.Battery.Charge.Level": # no usage so far, could be used in a custom dashboard to display how much of the batteries capacity is currently charged
                 addSensor('mdi:battery', 'Enpal Battery Percent', sensortype, unit)
-            elif field == "Energy.Battery.Charge.Day": # use this for "Energy Storage" in the energy dashboard
+            elif field == "Energy.Battery.Charge.Day": # don't use this for "Energy Storage" in the energy dashboard, it is VERY inaccurate
                 addSensor('mdi:battery-arrow-up', 'Enpal Battery Charge Day', sensortype, unit)
-            elif field == "Energy.Battery.Discharge.Day": # use this for "Energy Storage" in the energy dashboard
+            elif field == "Energy.Battery.Discharge.Day": # don't use this for "Energy Storage" in the energy dashboard, it is VERY inaccurate
                 addSensor('mdi:battery-arrow-down', 'Enpal Battery Discharge Day', sensortype, unit)
             else:
                 addSensor('mdi:battery', 'Enpal Battery ' + field, sensortype, unit) # add all other sensors generically
@@ -144,6 +151,8 @@ async def async_setup_entry(
                 addSensor('mdi:battery-arrow-down', 'Enpal Battery Discharge Day duplicate', sensortype, unit)
             elif field == "Energy.Storage.Total.In.Day": # duplicates Energy.Battery.Discharge.Day
                 addSensor('mdi:battery-arrow-up', 'Enpal Battery Charge Day duplicate', sensortype, unit)
+            elif field == "measureId": # ignore this
+                unit = ""
             else:
                 addSensor('mdi:battery', 'Enpal System ' + field, sensortype, unit) # add all other sensors generically
 
